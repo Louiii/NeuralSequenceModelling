@@ -1,0 +1,19 @@
+
+Regression:
+
+- mathematical waves
+- audio
+- image generation
+- weather, given the: cloud cover, time, raining, predict the temperature at each hour in the day (one rollout=24 (hours))
+- videos
+
+
+Classification:
+
+- text prediction
+- code prediction
+- image classification
+- weather, eg. classify wether it is raining given the other data.^
+- videos
+- translation
+- image captioning
