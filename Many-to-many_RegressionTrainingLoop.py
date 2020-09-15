@@ -41,8 +41,9 @@ algo = ['simplernn-low-level',
         'lstm-low-level',
         # 'lstm-mid-level',
         'lstm-mid-level_peephole',
-        'lstm-high-level'
-        ][3]
+        'lstm-high-level',
+        'dilated rnn'
+        ][2]
 
 print(algo)
 if algo=='simplernn-low-level':
@@ -69,6 +70,9 @@ elif algo=='lstm-mid-level_peephole':
     from _4_LSTM.LSTMs import MidLevelLSTM_peephole as RNN# not working properly for some reason
 elif algo=='lstm-high-level':
     from _4_LSTM.LSTMs import HighLevelLSTM as RNN
+elif algo=='dilated rnn':
+    from _5_DilatedRNN.DilatedRNNs import DilatedRNN as RNN
+    rollout, lr, n_layers, passes = 10, 3e-3, 2, 10000
 
 model = RNN(x_dim, h_dim, y_dim, n_layers, rollout)
 print(model)
