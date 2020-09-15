@@ -21,61 +21,56 @@ class DRNN(nn.Module):
         h_state: {n_layers, batch,     hidden_size}
         out:     {batch,    time_step, hidden_size}
         '''
-        batch_size = X.size(0)
-        if hidden is None: 
-            hidden = self.init_hidden(len(self.dilations), batch_size, self.h_dim)
+        batch_size, n_steps, _ = X.size()
 
         h_states = X
-        n_steps = h_states.size(1)
-        outputs = []
+        new_h = []
         for i, (rnn, dilation) in enumerate(zip(self.cells, self.dilations)):
-            h_states, _ = self.pad_input(h_states, n_steps, dilation)
+            h_states = self.pad_input(h_states, n_steps, dilation)
 
             # Dilated sequence (dil=3): [0,...,6] -> [[0,3],[1,4],[2,5],[3,6]] 
             dilated_h = torch.cat([h_states[:, j::dilation, :] for j in range(dilation)], 0)
 
-            dilated_hs, hidden[i] = rnn(dilated_h, hidden[i])
+            if hidden is None:
+                h = self.init_single_hidden(batch_size * dilation)
+            else: 
+                h = hidden[i]
+            dilated_hs, h = rnn(dilated_h, h)
+            new_h.append(h)
 
-            print("\nhidden states size", dilated_hs.size(), "\nindividual h_"+str(i+1)+" size", hidden[i][0].size())
-            
             splitted_hs = self.split_outputs(dilated_hs, dilation)
             h_states = splitted_hs[:, :n_steps, :]# get rid of the padding
 
-            outputs.append(h_states[:,-dilation:,:])
-        return h_states, outputs
+        return h_states, new_h
 
     def split_outputs(self, dilated_hs, dilation):
-        batchsize = dilated_hs.size(0) // dilation# original batch_size = the current batch size // dilation
-        blocks = [dilated_hs[i * batchsize: (i + 1) * batchsize, :, :] for i in range(dilation)]
-        interleaved = torch.stack((blocks)).transpose(1, 2).contiguous()
-        return interleaved.view(batchsize, dilated_hs.size(1) * dilation, dilated_hs.size(2) )
+        bs = dilated_hs.size(0) // dilation# original batch_size = the current batch size // dilation
+        blocks = [dilated_hs[i*bs:(i+1)*bs,:,:] for i in range(dilation)]
+        interleaved = torch.stack((blocks)).transpose(1, 2)#.contiguous()
+        return interleaved.view(bs, dilated_hs.size(1)*dilation, dilated_hs.size(2))
 
     def pad_input(self, X, n_steps, dilation):
-        is_even = (n_steps % dilation) == 0
-
-        if not is_even:# pad
+        if n_steps%dilation != 0:# pad
             dilated_steps = n_steps // dilation + 1
-            zeros_ = torch.zeros(X.size(0),
-                                 dilated_steps * dilation - X.size(1),
-                                 X.size(2))
-            if use_cuda: zeros_ = zeros_.cuda()
-            return torch.cat((X, zeros_), dim=1), dilated_steps
-        return X, n_steps // dilation# no padding needed
+            z = torch.zeros(X.size(0), dilated_steps*dilation-X.size(1), X.size(2))
+            # if use_cuda: z = z.cuda()
+            return torch.cat((X, z), dim=1)
+        return X# no padding needed
 
-    def init_single_hidden(self, batch_size, hidden_dim):
-        hidden = torch.zeros(1, batch_size, hidden_dim)
-        memory = torch.zeros(1, batch_size, hidden_dim)
-        if use_cuda: hidden, memory = hidden.cuda(), memory.cuda()
-        return (hidden, memory)
+    def init_single_hidden(self, batch_size):
+        a = torch.zeros(1, batch_size, self.h_dim)
+        c = torch.zeros(1, batch_size, self.h_dim)
+        if use_cuda: a, c = a.cuda(), c.cuda()
+        return (a, c)
 
-    def init_hidden(self, n_layers, batch_size, hidden_dim):
+    def init_hidden(self, batch_size):
         hidden = []
         for dilation in self.dilations:
-            hidden.append(self.init_single_hidden(batch_size * dilation, hidden_dim))
+            hidden.append(self.init_single_hidden(batch_size * dilation))
         return hidden
 
 class DilatedRNN(nn.Module):
-    def __init__(self, in_dim, h_dim, out_dim, n_layers, dropout=0):
+    def __init__(self, in_dim, h_dim, out_dim, n_layers, rollout, dropout=0):
         super(DilatedRNN, self).__init__()
         self.rnn = DRNN(in_dim, h_dim, n_layers, dropout)
         self.out = nn.Linear(h_dim, out_dim)
@@ -85,22 +80,12 @@ class DilatedRNN(nn.Module):
         y_hat = self.out(hs)
         return y_hat, h
 
+    def init_hidden(self, batch_size=1):
+        return self.rnn.init_hidden(batch_size)
+
+    def break_connection(self, h):
+        lstm_break = lambda a, c: (a.detach(), c.detach())
+        return [lstm_break(*hd) for hd in h]
+
     def parameters(self):
-        return self.rnn.parameters() + [self.out.bias, self.out.weight]
-
-
-# n_input = 9
-# h_dim = 13
-# n_layers = 5
-# batch_size = 6
-# seq_size = 11
-
-# model = DRNN(n_input, h_dim, n_layers)
-# h = None
-
-# x1 = torch.randn(batch_size, seq_size, n_input)
-# x2 = torch.randn(batch_size, seq_size, n_input)
-
-# out, hidden = model(x1, h)
-
-# print("Out size", out.size())
+        return list(self.rnn.parameters()) + [self.out.bias, self.out.weight]

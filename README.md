@@ -3,24 +3,17 @@
 
 # TODO:
 
-> ... dilated LSTMs
-
-> Wavenet
-
-> Attention
-
-> Transformer
+- Multihead attention
+- Encoder Decoder translation model
+- Compare to standard attention model
+- Build transformer
+- Add protein dataset compatibility
+- SNAIL, SelfAttnGAN, PointerNetwork, Wavenet
 
 > Organise classification training loop to best fit all types of data!
-
 > Organise whole file system to best fit with encoder-decoder architectures.
-
 > Use teacher forcing
 
-> Download DNA datasets
-
-
-- Leaky units?
 
 ```
 .
@@ -126,7 +119,7 @@ A standard RNN maps [X; H1; H2] -> [H1; H2]
 
 Let the network mapping [..] -> H1 be called f1, and the network mapping [..] -> H2 be called f2.
 
-If f1 is some function of just H1 and X, and f2 is some function of just H2 and X, then this is equivalent to having two RNNs. 
+If f1 is some function of just H1 and X, and f2 is some function of just H2 and X, then this is equivalent to having two RNNs.
 
 Now assume f1 is deeper than f2. For example consider f2 as a single layer, this can be considered a skip connection.
 
@@ -142,7 +135,60 @@ Finally, let p1 be a number specifying how many units from H1 and p2 from H2. Th
 # GRU
 
 
+# LSTM
+
+
+# Dilated RNN
+
+https://arxiv.org/abs/1710.02224
+
+
+# Neural Turing Machine
+
 
 # Attention
 
-this is the first instance of attention that sparked the revolution - additive attention (also known as Bahdanau attention) proposed by Bahdanau et al.
+Encoder-decoder model with additive attention mechanism: Bahdanau et al., 2015.
+   ╭-----╮   ╭-----╮
+...|s_t-1|-->| s_t |...  Decoder
+   ╰-----╯ / ╰-----╯
+           |
+           ⊕             Context vector
+         ⟋/| ⟍  
+       ⟋ / |   ⟍
+  a1 ⟋a2/a3|   an⟍      Alignment weights at time step t. These also depend on s_t-1
+   ⟋   /   |       ⟍
+┌--┐ ┌--┐ ┌--┐     ┌--┐ 
+|h1|>|h2|>|h3|>... |hn|  Encoder: forward
+|g1|<|g1|<|g1|<... |g1|  Encoder: backward
+└--┘ └--┘ └--┘     └--┘
+ x1   x2   x3       xn
+
+
+The equations:
+x = [x1,..., xn]
+y = [y1,..., ym]
+
+Say Encoder is a bidirectional RNN, H_i = [h_i; g_i]
+Decoder has one direction, s_t = f(s_t-1, y_t-1, c_t)
+
+c_t = sum_i=1,..,n { a_{t,i} * h_i }
+a_{t,i} = align(y_t, x_i) = Softmax(score(s_{t-1}, h_i))
+
+score(s_t, h_i) = feedforward({dim(s)+dim(h),..., 1})
+e.g.            = v . tanh( W * [s_t; h_i] ) {params: v, W}
+
+
+The algorithm:
+1. Run Encoder, store h_i i=1,..,n
+2. for t in range(m):# while True: # and stop when EOF char is output
+       compute a_{t,i} for all i
+       compute context vector, c_t
+       take one step for the decoder with s_t-1 as hidden and c_t as input
+       produce y_t
+
+## Multi-headed Attention
+
+
+
+# Transformer

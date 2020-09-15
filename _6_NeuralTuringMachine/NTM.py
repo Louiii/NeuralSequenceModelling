@@ -21,7 +21,7 @@ class Controller(nn.Module):
         elif algo=='RNN':
             self.net = nn.RNN(input_size=input_dim, hidden_size=output_dim, num_layers=n_layers)
             self.h_bias = Parameter(torch.randn(self.n_layers, 1, self.output_dim) * 0.05)
-        else:
+        else:# feedforward
             dim = max(input_dim, output_dim)
             layers = [nn.Linear(input_dim, dim), nn.Sigmoid()]
             for i in range(1, n_layers):

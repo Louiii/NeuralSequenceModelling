@@ -197,9 +197,9 @@ class HighLevelLSTM(nn.Module):
         self.outLayer = nn.Linear(hidden_size, output_size)
 
     def forward(self, x, h):
-        a, c = self.lstm(x, h)
-        yhat = self.outLayer(a)
-        h = (c[0].detach(), c[1].detach())# CHECK THIS?? 
+        hs, (hn, cn) = self.lstm(x, h)
+        yhat = self.outLayer(hs)
+        h = (hn.detach(), cn.detach())
         return yhat, h
 
     def init_hidden(self):
