@@ -147,7 +147,7 @@ if __name__=="__main__":
     # decoder = DecoderRNN( h_dim, output_lang.n_words, device ).to(device)
     # decoder = AttnDecoderRNN( h_dim, output_lang.n_words, MAX_LENGTH, device, dropout_p=0.1).to(device)
 
-#    encoder, attn_decoder = load_model('models/')
+    encoder, decoder = load_model('models/')
 
     trainIters(encoder, decoder, 75000, input_lang, output_lang, device, print_every=100, name='attention-decoder')
 
