@@ -1,6 +1,8 @@
 from data.classification.Translation import *
 from _8_Attention.AttentionTypes import Encoder, Attention, RNN, LuongDecoder
 
+PATH = '_8_Attention/models/'
+
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
                           decoder_optimiser, criterion, max_length=MAX_LENGTH):
     enc_h = encoder.initHidden()
@@ -10,18 +12,8 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
 
     input_length = input_tensor.size(0)
     target_length = target_tensor.size(0)
-
-    # enc_out = torch.zeros(max_length, encoder.h_dim, device=device)
-
     loss = 0
-
     enc_out, enc_h = encoder(input_tensor, enc_h)
-
-    # print("Encoder out size: (seq_len, batch, num_directions * hidden_size)")
-    # print(enc_out.size())
-    # for ei in range(input_length):
-    #     encoder_output, enc_h = encoder(input_tensor[ei], enc_h)
-    #     enc_out[ei] = encoder_output[0, 0]
 
     dec_inp = torch.tensor([[SOS_token]], device=device)
     dec_h = enc_h
@@ -29,29 +21,21 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
     use_teacher_forcing = random.random() < teacher_forcing_ratio
 
     if use_teacher_forcing:
-        # print("WITH TEACHER FORCING")
         # Teacher forcing: Feed the target as the next input
         for di in range(target_length):
             decoder_output, dec_h, decoder_attention = decoder(dec_inp, dec_h, enc_out)
-            # decoder_output, dec_h = decoder(dec_inp, dec_h)
-
-            # print("dec_inp, decoder_output, target_tensor[di]: "+str(dec_inp.size())+", "+str(decoder_output.size())+", "+str(target_tensor[di].size()))
+            
             loss += criterion(decoder_output[0], target_tensor[di])
             dec_inp = target_tensor[di].unsqueeze(0)  # Teacher forcing
 
     else:
-        # print("WITHOUT TEACHER FORCING")
         # Without teacher forcing: use its own predictions as the next input
         for di in range(target_length):
             decoder_output, dec_h, decoder_attention = decoder(dec_inp, dec_h, enc_out)
-            # decoder_output, dec_h = decoder(dec_inp, dec_h)
-
+            
             topv, topi = decoder_output.topk(1)
-            # print(topi)
-
             dec_inp = topi.squeeze(0).detach()  # detach from history as input
-            # print(decoder_output[0])
-            # print("dec_inp, decoder_output, target_tensor[di]: "+str(dec_inp.size())+", "+str(decoder_output.size())+", "+str(target_tensor[di].size()))
+            
             loss += criterion(decoder_output[0], target_tensor[di])
             if dec_inp.item() == EOS_token:
                 break
@@ -63,15 +47,14 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
 
     return loss.item() / target_length
 
-def trainIters(encoder, decoder, n_iters, input_lang, output_lang, device, 
-               print_every=1000, plot_every=100, learning_rate=0.01, name=''):
+def trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, n_iters, 
+               input_lang, output_lang, device, print_every=1000, plot_every=100, 
+               name=''):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
-    encoder_optimiser = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimiser = optim.SGD(decoder.parameters(), lr=learning_rate)
     training_pairs = [tensorsFromPair(random.choice(pairs), input_lang, output_lang, device)
                                                        for i in range(n_iters)]
     criterion = nn.NLLLoss()
@@ -92,7 +75,7 @@ def trainIters(encoder, decoder, n_iters, input_lang, output_lang, device,
             print_loss_total = 0
             pbar.set_description('Loss: %.4f' % print_loss_avg)
             checkpoint_save(iter, encoder, decoder, encoder_optimiser,
-                                decoder_optimiser, '_8_Attention/models/'+name+'checkpt_')
+                                decoder_optimiser, PATH+name+'checkpt_')
 
         if iter % plot_every == 0:
             plot_loss_avg = plot_loss_total / plot_every
@@ -144,12 +127,21 @@ if __name__=="__main__":
     attn = Attention(h_dim, h_dim, attention_type='general')
 
     decoder = LuongDecoder(attn, h_dim, output_lang.n_words, "GRU")
+
+    learning_rate=0.01
+    encoder_optimiser = optim.SGD(encoder.parameters(), lr=learning_rate)
+    decoder_optimiser = optim.SGD(decoder.parameters(), lr=learning_rate)
+
     # decoder = DecoderRNN( h_dim, output_lang.n_words, device ).to(device)
     # decoder = AttnDecoderRNN( h_dim, output_lang.n_words, MAX_LENGTH, device, dropout_p=0.1).to(device)
 
-    encoder, decoder = load_model('models/')
+    # encoder, decoder = load_model('models/')
 
-    trainIters(encoder, decoder, 75000, input_lang, output_lang, device, print_every=100, name='attention-decoder')
+    name = 'attention-decoder'
+
+    encoder, decoder, encoder_optimiser, decoder_optimiser = load_checkpoint(encoder, decoder, encoder_optimiser, decoder_optimiser, PATH + name + 'checkpt_' )
+
+    # trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, 75000, input_lang, output_lang, device, print_every=100, name=name)
 
     evaluateRandomly(encoder, decoder, pairs, input_lang, output_lang, device, n=15)
 

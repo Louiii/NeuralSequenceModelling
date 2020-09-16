@@ -12,7 +12,49 @@ Attending to the entire input state space.
 
 Local/Hard:
 Attending to the part of input state space; i.e. a patch of the input image.
+
+
+Encoder-decoder model with additive attention mechanism: Bahdanau et al., 2015.
+   ╭-----╮   ╭-----╮
+...|s_t-1|-->| s_t |...  Decoder
+   ╰-----╯ / ╰-----╯
+           |
+           ⊕             Context vector
+         ⟋/| ⟍  
+       ⟋ / |   ⟍
+  a1 ⟋a2/a3|   an⟍      Alignment weights at time step t. These also depend on s_t-1
+   ⟋   /   |       ⟍
+┌--┐ ┌--┐ ┌--┐     ┌--┐ 
+|h1|>|h2|>|h3|>... |hn|  Encoder: forward
+|g1|<|g1|<|g1|<... |g1|  Encoder: backward
+└--┘ └--┘ └--┘     └--┘
+ x1   x2   x3       xn
+
+
+The equations:
+x = [x1,..., xn]
+y = [y1,..., ym]
+
+Say Encoder is a bidirectional RNN, H_i = [h_i; g_i]
+Decoder has one direction, s_t = f(s_t-1, y_t-1, c_t)
+
+c_t = sum_i=1,..,n { a_{t,i} * h_i }
+a_{t,i} = align(y_t, x_i) = Softmax(score(s_{t-1}, h_i))
+
+score(s_t, h_i) = feedforward({dim(s)+dim(h),..., 1})
+e.g.            = v . tanh( W * [s_t; h_i] ) {params: v, W}
+
+
+The algorithm:
+1. Run Encoder, store h_i i=1,..,n
+2. for t in range(m):# while True: # and stop when EOF char is output
+       compute a_{t,i} for all i
+       compute context vector, c_t
+       take one step for the decoder with s_t-1 as hidden and c_t as input
+       produce y_t
+
 '''
+
 
 
 class Attention(nn.Module):
@@ -192,123 +234,3 @@ class LuongDecoder(nn.Module):
         y_hat_probs = self.log_softmax(self.classifier(dec_h_context))
         
         return y_hat_probs, dec_h, attention_weights
-
-
-
-
-# class EncoderDecoder(nn.Module):
-#     """ Seq2seq model with attention """
-#     def __init__(self, x_dim, h_dim, y_dim, attention_type='general', 
-#                 enc_type="Simple", dec_type="Simple", max_out_len=100):
-#         super(EncoderDecoder, self).__init__()
-#         self.h_dim = h_dim
-#         self.y_dim = y_dim
-#         self.max_out_len = max_out_len
-
-#         enc_types = {"Simple":nn.RNN, "GRU":nn.GRU}
-#         self.encoder = enc_types[enc_type](x_dim, h_dim)
-#         # if enc_type=="Simple":
-#         #     self.encoder = nn.RNN(x_dim, h_dim)
-#         # elif enc_type=="GRU":
-#         #     self.encoder = nn.GRU(x_dim, h_dim)
-
-#         self.attention = Attention(h_dim, attention_type, dec_type)
-
-#         self.h2o = nn.Linear(h_dim, y_dim)
-#         self.tanh = nn.Tanh()
-
-#         self.EOF = None
-
-        
-#     def encode(self, x, eh):
-#         output, hn = self.encoder(x, eh)
-#         return output# hidden states
-
-#     def step(self, hs, dec_h):
-#         dec_h = torch.zeros(1, self.h_dim) if dec_h==None else dec_h
-#         next_dec_h, _ = self.attention(dec_h, hs)
-#         return next_dec_h
-
-#     def forward(self, x, eh=None, dh=None):
-#         hs = self.encode(x, eh)
-#         hs = hs.squeeze(1)
-
-#         ys = torch.zeros(self.max_out_len, self.y_dim)
-#         for i in range(self.max_out_len):
-#             dh = self.step(hs, dh)
-#             ys[i,:] = self.tanh(self.h2o(dh))
-#             if ys[i,:]==self.EOF: break
-
-#         return ys[:i+1,:]
-
-
-
-
-
-
-
-
-
-'''
-
-Encoder-decoder model with additive attention mechanism: Bahdanau et al., 2015.
-   ╭-----╮   ╭-----╮
-...|s_t-1|-->| s_t |...  Decoder
-   ╰-----╯ / ╰-----╯
-           |
-           ⊕             Context vector
-         ⟋/| ⟍  
-       ⟋ / |   ⟍
-  a1 ⟋a2/a3|   an⟍      Alignment weights at time step t. These also depend on s_t-1
-   ⟋   /   |       ⟍
-┌--┐ ┌--┐ ┌--┐     ┌--┐ 
-|h1|>|h2|>|h3|>... |hn|  Encoder: forward
-|g1|<|g1|<|g1|<... |g1|  Encoder: backward
-└--┘ └--┘ └--┘     └--┘
- x1   x2   x3       xn
-
-
-The equations:
-x = [x1,..., xn]
-y = [y1,..., ym]
-
-Say Encoder is a bidirectional RNN, H_i = [h_i; g_i]
-Decoder has one direction, s_t = f(s_t-1, y_t-1, c_t)
-
-c_t = sum_i=1,..,n { a_{t,i} * h_i }
-a_{t,i} = align(y_t, x_i) = Softmax(score(s_{t-1}, h_i))
-
-score(s_t, h_i) = feedforward({dim(s)+dim(h),..., 1})
-e.g.            = v . tanh( W * [s_t; h_i] ) {params: v, W}
-
-
-The algorithm:
-1. Run Encoder, store h_i i=1,..,n
-2. for t in range(m):# while True: # and stop when EOF char is output
-       compute a_{t,i} for all i
-       compute context vector, c_t
-       take one step for the decoder with s_t-1 as hidden and c_t as input
-       produce y_t
-
-'''
-
-
-
-# in_seq_len  = 12
-# x_dim = 1
-# h_dim = 256
-# y_dim = 3
-# model = EncoderDecoder(x_dim, h_dim, y_dim)
-
-# X = torch.randn(in_seq_len, 1, x_dim)
-# Y_hat = model(X)
-
-# print(Y_hat.size())
-
-# attention = Attention(h_dim)
-# query = torch.randn(1, h_dim)
-# context = torch.randn(5, h_dim)
-# output, weights = attention(query, context)
-
-# print(output.size())
-# print(weights.size())

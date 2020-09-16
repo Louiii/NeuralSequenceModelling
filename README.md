@@ -4,8 +4,6 @@
 # TODO:
 
 - Multihead attention
-- Encoder Decoder translation model
-- Compare to standard attention model
 - Build transformer
 - Add protein dataset compatibility
 - SNAIL, SelfAttnGAN, PointerNetwork, Wavenet
