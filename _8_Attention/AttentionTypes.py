@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+# TODO: Doesn't fully support batching and multi-layered RNNs
+
+
 '''
 Self-Attention:
 Relating different positions of the same input sequence. Theoretically the self-attention 
@@ -64,20 +67,22 @@ class Attention(nn.Module):
         attention_type (str, optional): How to compute the attention score:
     """
 
-    def __init__(self, enc_dim, dec_dim, attention_type='general'):
+    def __init__(self, enc_dim, dec_dim, attention_type='general', max_length=None):
         super(Attention, self).__init__()
 
         self.type = attention_type
-        if self.type in ['general', 'location-base attention']:
+        if self.type == 'general':
             self.W_a = nn.Linear(dec_dim, dec_dim, bias=False)
+        if self.type == 'location-based':
+            self.W_l = nn.Linear(dec_dim, max_length)
         if self.type == 'additive':
             self.W1_a = nn.Linear(dec_dim, dec_dim, bias=False)
             self.W2_a = nn.Linear(enc_dim, dec_dim, bias=False)
             self.v = torch.nn.Parameter(torch.FloatTensor(dec_dim).uniform_(-0.1, 0.1))
 
         sc_fn = {'dot product':self.dotProduct, 'scaled dot product':self.scaledDotProduct, 
-                 'location-base attention':self.locationBase, 'general':self.general, 
-                 'additive':self.additive, 'content-base attention':self.contentBase}
+                 'location-based':self.locationBased, 'general':self.general, 
+                 'additive':self.additive, 'content-based':self.contentBased}
         if attention_type not in sc_fn:
             raise NotImplementedError(attention_type+" not supported. Options: "+str(sc_fn.keys()))
         else:
@@ -86,9 +91,11 @@ class Attention(nn.Module):
         # self.lin_out = nn.Linear(dec_dim * 2, dec_dim, bias=False)
         self.softmax = nn.Softmax(dim=-1)
         self.tanh = nn.Tanh()
+        self.cos_sim = nn.CosineSimilarity(dim=2)
 
     def dotProduct(self, query, context):# Luong2015
-        return torch.bmm(query, context.transpose(0, 1).contiguous())# q^T * Hs
+        context = context.permute([1, 2, 0]).contiguous()
+        return torch.bmm(query, context)# q^T * Hs
 
     def scaledDotProduct(self, query, context):# Vaswani2017
         n = context.size(1)# dim of  source hidden state
@@ -96,10 +103,11 @@ class Attention(nn.Module):
         motivated by the concern when the input is large, the softmax function may have an 
         extremely small gradient, hard for efficient learning.
         '''
-        return torch.bmm(query, context.transpose(0, 1).contiguous()) / n**0.5# q^T * Hs
+        context = context.permute([1, 2, 0]).contiguous()
+        return torch.bmm(query, context) / n**0.5# q^T * Hs
 
-    def locationBase(self, query, context):# Luong2015
-        return self.W_a(query)
+    def locationBased(self, query, context):# Luong2015
+        return self.W_l(query)[:,:,:context.size(0)]
 
     def general(self, query, context):# Luong2015
         query = self.W_a(query)
@@ -109,16 +117,14 @@ class Attention(nn.Module):
     def additive(self, query, context):# Bahdanau2015
         # v . tanh( W * [s_t; h_i] ) { W * [s_t; h_i] == [W1 * s_t, W2 * h_i], where W == [W1, W2] }
         WS = self.W1_a(query)
-        WH = self.W2_a(context)
-        return self.tanh(WS + WH) @ self.v
+        WH = self.W2_a(context).transpose(0, 1).contiguous()
+        scr = self.tanh(WS + WH) @ self.v
+        return scr.unsqueeze(0)
 
-    def contentBase(self, query, context):# Graves2014
+    def contentBased(self, query, context):# Graves2014
         # cosine[query, context]
-        return nn.CosineSimilarity(query, context)
+        return self.cos_sim(query, context).transpose(0, 1).unsqueeze(0)
 
-    # def luong_forward(self, prev_y_hat, dec_h, enc_hs):
-        
-    #     return 
 
     # def bahdanau_forward(self, query, context):# query should initially be the last encoder hidden state
     #     attention_weights = self.softmax(self.score(query, context))
@@ -159,7 +165,7 @@ class Attention(nn.Module):
         attention_weights = self.softmax(self.score(query, context))
 
         # (out_dim, query_len) * (query_len, dimensions) -> (out_dim, dimensions)
-        # print("attn weights, context: "+str(attention_weights.size())+", "+str(context.size()))
+        # print("attn weights, context: "+str(attention_weights.size())+", "+str(context.transpose(0,1).size()))
         context_vector = torch.bmm(attention_weights, context.transpose(0,1).contiguous())
 
 
@@ -205,9 +211,6 @@ class Encoder(nn.Module):
     def forward(self, x, h):
         embedded = self.embed(x)
         return self.rnn(embedded, h)
-    
-    # def init_hidden(self):
-    #     return torch.zeros()
 
 class LuongDecoder(nn.Module):
     def __init__(self, attention, h_dim, y_dim, decoder_type):
@@ -223,14 +226,14 @@ class LuongDecoder(nn.Module):
     
     def forward(self, prev_y_hat, dec_h, enc_hs):
         embed_y = self.embed(prev_y_hat)
-
+        
         _, dec_h = self.rnn(embed_y, dec_h)
+        dec_h_ = dec_h[0] if self.rnn.lstm else dec_h# only use h from lstm (not c)
 
-        context, attention_weights = self.attn(dec_h, enc_hs)
+        context, attention_weights = self.attn(dec_h_, enc_hs)
 
-        # print("context, dec_h: "+str(context.size())+", "+str(dec_h.size()))
-        dec_h_context = torch.cat((context, dec_h), dim=-1)
-        # print(self.classifier(dec_h_context))
+        dec_h_context = torch.cat((context, dec_h_), dim=-1)
+        
         y_hat_probs = self.log_softmax(self.classifier(dec_h_context))
         
         return y_hat_probs, dec_h, attention_weights

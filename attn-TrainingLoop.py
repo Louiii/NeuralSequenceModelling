@@ -7,8 +7,10 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
                           decoder_optimiser, criterion, max_length=MAX_LENGTH):
     enc_h = encoder.initHidden()
 
-    encoder_optimiser.zero_grad()
-    decoder_optimiser.zero_grad()
+    for p in encoder.parameters(): p.grad = None
+    for p in decoder.parameters(): p.grad = None
+    # encoder_optimiser.zero_grad()
+    # decoder_optimiser.zero_grad()
 
     input_length = input_tensor.size(0)
     target_length = target_tensor.size(0)
@@ -48,8 +50,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
     return loss.item() / target_length
 
 def trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, n_iters, 
-               input_lang, output_lang, device, print_every=1000, plot_every=100, 
-               name=''):
+               input_lang, output_lang, device, path, print_every=1000, plot_every=100):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
@@ -75,7 +76,7 @@ def trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, n_iters,
             print_loss_total = 0
             pbar.set_description('Loss: %.4f' % print_loss_avg)
             checkpoint_save(iter, encoder, decoder, encoder_optimiser,
-                                decoder_optimiser, PATH+name+'checkpt_')
+                                decoder_optimiser, path)
 
         if iter % plot_every == 0:
             plot_loss_avg = plot_loss_total / plot_every
@@ -93,40 +94,18 @@ if __name__=="__main__":
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     print(random.choice(pairs))
     
-    print('seq2seq or encoder-decoder rnn')
-    '''
-    Training the Model:
-    
-    To train we run the input sentence through the encoder, and keep track of every
-    output and the latest hidden state. Then the decoder is given the <SOS> token
-    as its first input, and the last hidden state of the encoder as its first hidden
-    state.
-    
-    “Teacher forcing” is the concept of using the real target outputs as each next
-    input, instead of using the decoder’s guess as the next input. Using teacher
-    forcing causes it to converge faster but when the trained network is exploited,
-    it may exhibit instability.
-    
-    You can observe outputs of teacher-forced networks that read with coherent
-    grammar but wander far from the correct translation - intuitively it has learned
-    to represent the output grammar and can “pick up” the meaning once the teacher
-    tells it the first few words, but it has not properly learned how to create the
-    sentence from the translation in the first place.
-    
-    Because of the freedom PyTorch’s autograd gives us, we can randomly choose to
-    use teacher forcing or not with a simple if statement. Turn
-    teacher_forcing_ratio up to use more of it.
-    
-    '''
+
     teacher_forcing_ratio = 0.5
+    attention_type='general'
+    rnn_type = 'GRU'
 
     h_dim = 256
     bidir = False
-    encoder = Encoder( input_lang.n_words, h_dim, "GRU", bidir )#.to(device)
+    encoder = Encoder( input_lang.n_words, h_dim, rnn_type, bidir )#.to(device)
 
-    attn = Attention(h_dim, h_dim, attention_type='general')
+    attn = Attention(h_dim, h_dim, attention_type=attention_type, max_length=MAX_LENGTH)
 
-    decoder = LuongDecoder(attn, h_dim, output_lang.n_words, "GRU")
+    decoder = LuongDecoder(attn, h_dim, output_lang.n_words, rnn_type)
 
     learning_rate=0.01
     encoder_optimiser = optim.SGD(encoder.parameters(), lr=learning_rate)
@@ -137,11 +116,11 @@ if __name__=="__main__":
 
     # encoder, decoder = load_model('models/')
 
-    name = 'attention-decoder'
-
-    encoder, decoder, encoder_optimiser, decoder_optimiser = load_checkpoint(encoder, decoder, encoder_optimiser, decoder_optimiser, PATH + name + 'checkpt_' )
-
-    # trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, 75000, input_lang, output_lang, device, print_every=100, name=name)
+    save_path = PATH+attention_type+'-attention-rnn'+rnn_type+'-checkpt_'
+    try:
+        encoder, decoder, encoder_optimiser, decoder_optimiser = load_checkpoint(encoder, decoder, encoder_optimiser, decoder_optimiser, save_path )
+    except:
+        trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, 75000, input_lang, output_lang, device, save_path, print_every=100)
 
     evaluateRandomly(encoder, decoder, pairs, input_lang, output_lang, device, n=15)
 
