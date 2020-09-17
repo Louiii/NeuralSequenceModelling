@@ -90,12 +90,13 @@ if __name__=="__main__":
 
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     print(random.choice(pairs))
-    
 
     teacher_forcing_ratio = 0.5
-    attention_type='general'
-    rnn_type = 'GRU'
-    decoder_type = 'Simple'
+
+    attention_type='general'# ['dot product', 'scaled dot product', 'location-based', 
+                            # 'general', 'additive', 'content-based']
+    rnn_type = 'GRU'# ['Simple', 'GRU', 'LSTM']
+    decoder_type = 'Simple'# ['Simple', 'Luong', 'Bahdanau']
 
     h_dim = 256
     bidir = False
