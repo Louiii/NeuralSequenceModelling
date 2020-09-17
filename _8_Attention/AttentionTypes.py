@@ -212,7 +212,35 @@ class Encoder(nn.Module):
         embedded = self.embed(x)
         return self.rnn(embedded, h)
 
+class SimpleDecoder(nn.Module):
+    '''
+    Standard classifier RNN
+    '''
+    def __init__(self, h_dim, y_dim, decoder_type):
+        super(SimpleDecoder, self).__init__()
+
+        self.embed = nn.Embedding(y_dim, h_dim)
+        self.classifier = nn.Linear(2 * h_dim, y_dim)
+        self.log_softmax = nn.LogSoftmax(dim=-1)
+        
+        self.rnn = RNN(h_dim, h_dim, decoder_type)
+
+    def forward(self, prev_y_hat, dec_h, enc_hs):
+        embed_y = self.embed(prev_y_hat)
+        
+        _, dec_h = self.rnn(embed_y, dec_h)
+        dec_h_ = dec_h[0] if self.rnn.lstm else dec_h# only use h from lstm (not c)
+
+        y_hat_probs = self.log_softmax(self.classifier(dec_h_))
+        
+        return y_hat_probs, dec_h, attention_weights
+
 class LuongDecoder(nn.Module):
+    '''
+    RNN called before attention.
+    RNN input = embed_y
+    Final layer input = [decoder hidden state; context]
+    '''
     def __init__(self, attention, h_dim, y_dim, decoder_type):
         super(LuongDecoder, self).__init__()
 
@@ -237,3 +265,40 @@ class LuongDecoder(nn.Module):
         y_hat_probs = self.log_softmax(self.classifier(dec_h_context))
         
         return y_hat_probs, dec_h, attention_weights
+        
+class BahdanauDecoder(nn.Module):
+    '''
+    RNN called after attention.
+    RNN input = [embed_y; context]
+    Final layer input = decoder hidden state
+    '''
+    def __init__(self, attention, h_dim, y_dim, decoder_type):
+        super(BahdanauDecoder, self).__init__()
+
+        self.attn = attention
+
+        self.embed = nn.Embedding(y_dim, h_dim)
+        self.classifier = nn.Linear(h_dim, y_dim)
+        self.log_softmax = nn.LogSoftmax(dim=-1)
+        
+        self.rnn = RNN(2*h_dim, h_dim, decoder_type)
+    
+    def forward(self, prev_y_hat, dec_h, enc_hs):
+        embed_y = self.embed(prev_y_hat)
+
+        dec_h_ = dec_h[0] if self.rnn.lstm else dec_h# only use h from lstm (not c)
+        context, attention_weights = self.attn(dec_h_, enc_hs)
+        
+        rnn_input = torch.cat((embed_y, context), dim=-1)
+        _, dec_h = self.rnn(rnn_input, dec_h)
+        dec_h_ = dec_h[0] if self.rnn.lstm else dec_h# only use h from lstm (not c)
+        
+        y_hat_probs = self.log_softmax(self.classifier(dec_h_))
+        
+        return y_hat_probs, dec_h, attention_weights
+
+'''
+The PyTorch tutorial (linked below) uses what I call 'BahdanauDecoder', with a varient of a
+location-based score function also depending on the embedded vector of the last output (embed_y).
+https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
+'''

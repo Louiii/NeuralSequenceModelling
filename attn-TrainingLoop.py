@@ -1,5 +1,7 @@
 from data.classification.Translation import *
-from _8_Attention.AttentionTypes import Encoder, Attention, RNN, LuongDecoder
+from _8_Attention.AttentionTypes import Encoder, Attention, RNN, SimpleDecoder, LuongDecoder, BahdanauDecoder
+
+# TODO: Support bidirectional encoder
 
 PATH = '_8_Attention/models/'
 
@@ -9,8 +11,6 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
 
     for p in encoder.parameters(): p.grad = None
     for p in decoder.parameters(): p.grad = None
-    # encoder_optimiser.zero_grad()
-    # decoder_optimiser.zero_grad()
 
     input_length = input_tensor.size(0)
     target_length = target_tensor.size(0)
@@ -85,9 +85,6 @@ def trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, n_iters,
 
     showPlot(plot_losses)
 
-
-#save_model(encoder1, attn_decoder1, 'models/')
-
 if __name__=="__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -98,6 +95,7 @@ if __name__=="__main__":
     teacher_forcing_ratio = 0.5
     attention_type='general'
     rnn_type = 'GRU'
+    decoder_type = 'Simple'
 
     h_dim = 256
     bidir = False
@@ -105,18 +103,18 @@ if __name__=="__main__":
 
     attn = Attention(h_dim, h_dim, attention_type=attention_type, max_length=MAX_LENGTH)
 
-    decoder = LuongDecoder(attn, h_dim, output_lang.n_words, rnn_type)
+    if decoder_type=='Simple':
+        decoder = SimpleDecoder(h_dim, output_lang.n_words, rnn_type)
+    elif decoder_type=='Luong':
+        decoder = LuongDecoder(attn, h_dim, output_lang.n_words, rnn_type)
+    elif decoder_type=='Bahdanau':
+        decoder = BahdanauDecoder(attn, h_dim, output_lang.n_words, rnn_type)
 
     learning_rate=0.01
     encoder_optimiser = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimiser = optim.SGD(decoder.parameters(), lr=learning_rate)
 
-    # decoder = DecoderRNN( h_dim, output_lang.n_words, device ).to(device)
-    # decoder = AttnDecoderRNN( h_dim, output_lang.n_words, MAX_LENGTH, device, dropout_p=0.1).to(device)
-
-    # encoder, decoder = load_model('models/')
-
-    save_path = PATH+attention_type+'-attention-rnn'+rnn_type+'-checkpt_'
+    save_path = PATH+attention_type+'-attention-dec'+decoder_type+'-rnn'+rnn_type+'-checkpt_'
     try:
         encoder, decoder, encoder_optimiser, decoder_optimiser = load_checkpoint(encoder, decoder, encoder_optimiser, decoder_optimiser, save_path )
     except:
