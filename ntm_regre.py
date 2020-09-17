@@ -3,7 +3,7 @@ import torch
 from torch import nn, optim
 import numpy as np
 
-from _6_NeuralTuringMachine.NTM import NTM
+from C1_NeuralTuringMachine.NTM import NTM
 from data.regression.SimpleSignals import *
 
 def clip_grads(model):

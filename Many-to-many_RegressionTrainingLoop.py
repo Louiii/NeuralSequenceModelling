@@ -47,31 +47,31 @@ algo = ['simplernn-low-level',
 
 print(algo)
 if algo=='simplernn-low-level':
-    from _1_SimpleRNN.SimpleRNNs import LowLevelRNN as RNN
+    from A1_SimpleRNN.SimpleRNNs import LowLevelRNN as RNN
 elif algo=='simplernn-mid-level':
-    from _1_SimpleRNN.SimpleRNNs import MidLevelRNN as RNN
+    from A1_SimpleRNN.SimpleRNNs import MidLevelRNN as RNN
 elif algo=='simplernn-high-level':
-    from _1_SimpleRNN.SimpleRNNs import HighLevelRNN as RNN
+    from A1_SimpleRNN.SimpleRNNs import HighLevelRNN as RNN
 elif algo=='stackedrnn':
-    from _2_DeepRNN.StackedHiddenRNN import StackedRNN as RNN
+    from A2_DeepRNN.StackedHiddenRNN import StackedRNN as RNN
 elif algo=='gru-simplified-low-level':
-    from _3_GRU.GRUs import LowLevelGRU_simplified as RNN
+    from A3_GRU.GRUs import LowLevelGRU_simplified as RNN
 elif algo=='gru-low-level':
-    from _3_GRU.GRUs import LowLevelGRU as RNN
+    from A3_GRU.GRUs import LowLevelGRU as RNN
 # elif algo=='gru-mid-level':
 #     from _3_GRU.GRUs import MidLevelGRU as RNN
 elif algo=='gru-high-level':
-    from _3_GRU.GRUs import HighLevelGRU as RNN
+    from A3_GRU.GRUs import HighLevelGRU as RNN
 elif algo=='lstm-low-level':
-    from _4_LSTM.LSTMs import LowLevelLSTM as RNN
+    from A4_LSTM.LSTMs import LowLevelLSTM as RNN
 # elif algo=='lstm-mid-level':
 #     from _4_LSTM.LSTMs import MidLevelLSTM as RNN
 elif algo=='lstm-mid-level_peephole':
-    from _4_LSTM.LSTMs import MidLevelLSTM_peephole as RNN# not working properly for some reason
+    from A4_LSTM.LSTMs import MidLevelLSTM_peephole as RNN# not working properly for some reason
 elif algo=='lstm-high-level':
-    from _4_LSTM.LSTMs import HighLevelLSTM as RNN
+    from A4_LSTM.LSTMs import HighLevelLSTM as RNN
 elif algo=='dilated rnn':
-    from _5_DilatedRNN.DilatedRNNs import DilatedRNN as RNN
+    from B1_DilatedRNN.DilatedRNNs import DilatedRNN as RNN
     rollout, lr, n_layers, passes = 10, 3e-3, 2, 10000
 
 model = RNN(x_dim, h_dim, y_dim, n_layers, rollout)

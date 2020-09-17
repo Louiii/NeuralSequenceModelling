@@ -27,13 +27,13 @@ algo = ['simplernn-low-level',
 
 print(algo)
 if algo=='simplernn-low-level':
-    from _1_SimpleRNN.SimpleRNNs import LowLevelRNN_classifier as RNN
+    from A1_SimpleRNN.SimpleRNNs import LowLevelRNN_classifier as RNN
 elif algo=='simplernn-high-level':
-    from _1_SimpleRNN.SimpleRNNs import HighLevelRNN_classifier as RNN
+    from A1_SimpleRNN.SimpleRNNs import HighLevelRNN_classifier as RNN
 elif algo=='gru-high-level':
-    from _3_GRU.GRUs import HighLevelGRU_classifier as RNN
+    from A3_GRU.GRUs import HighLevelGRU_classifier as RNN
 elif algo=='lstm-high-level':
-    from _4_LSTM.LSTMs import HighLevelLSTM_classifier as RNN
+    from A4_LSTM.LSTMs import HighLevelLSTM_classifier as RNN
 
 model = RNN(make_data.vocab_size, hidden_size, make_data.vocab_size, n_layers, rollout)
 print(model)

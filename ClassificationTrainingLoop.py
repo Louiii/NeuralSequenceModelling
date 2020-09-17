@@ -40,9 +40,9 @@ data = torch.unsqueeze(data, dim=1)
 
 type = ['low-level', 'high-level'][0]
 if type=='low-level':
-    from _1_SimpleRNN.SimpleRNNs import LowLevelRNN_classifier as RNN
+    from A1_SimpleRNN.SimpleRNNs import LowLevelRNN_classifier as RNN
 else:
-    from _1_SimpleRNN.SimpleRNNs import HighLevelRNN_classifier as RNN
+    from A1_SimpleRNN.SimpleRNNs import HighLevelRNN_classifier as RNN
 
 model = RNN(vocab_size, hidden_size, vocab_size, n_layers, rollout)
 print(model)

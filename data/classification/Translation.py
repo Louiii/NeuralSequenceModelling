@@ -189,8 +189,7 @@ def showAttention(input_sentence, output_words, attentions):
     fig.colorbar(cax)
 
     # Set up axes
-    ax.set_xticklabels([''] + input_sentence.split(' ') +
-                       ['<EOS>'], rotation=90)
+    ax.set_xticklabels([''] + input_sentence.split(' ') + ['<EOS>'], rotation=90)
     ax.set_yticklabels([''] + output_words)
 
     # Show label at every tick
@@ -205,13 +204,14 @@ def evaluateAndShowAttention(input_sentence, enc, dec, input_lang, output_lang, 
     print('output =', ' '.join(output_words))
     showAttention(input_sentence, output_words, attentions)
 
-def showPlot(points):
+def showPlot(points, name):
     plt.figure()
     fig, ax = plt.subplots()
-    # this locator puts ticks at regular intervals
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
+    plt.ylim(0, 5)
+    plt.savefig(name[:-8]+'curve', dpi=250)
     plt.show()
 
 def save_model(enc, dec, PATH):

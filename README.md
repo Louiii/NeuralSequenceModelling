@@ -3,9 +3,11 @@
 
 # TODO:
 
+AWESOME:
 - Multihead attention
 - Build transformer
 - Add protein dataset compatibility
+
 - SNAIL, SelfAttnGAN, PointerNetwork, Wavenet
 
 > Organise classification training loop to best fit all types of data!

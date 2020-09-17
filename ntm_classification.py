@@ -5,7 +5,7 @@ import torch
 from torch import nn, optim
 import numpy as np
 
-from _6_NeuralTuringMachine.NTM import NTM
+from C1_NeuralTuringMachine.NTM import NTM
 from data.classification.copy_task import make_data
 
 def clip_grads(model):

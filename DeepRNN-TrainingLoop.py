@@ -7,7 +7,7 @@ rollout = 10
 
 algo = ['mlp rnn', 'skip rnn', 'res rnn'][2]
 if algo=='mlp rnn':
-    from _2_DeepRNN.MLP_RNN import FullMLP_RNN
+    from A2_DeepRNN.MLP_RNN import FullMLP_RNN
     x_dims = [2, 6]
     h_dims = [20, 20]
     h_dims = [h_dims[-1]+x_dims[-1]] + h_dims
@@ -15,7 +15,7 @@ if algo=='mlp rnn':
 
     model = FullMLP_RNN(x_dims, h_dims, y_dims)
 elif algo=='skip rnn': 
-    from _2_DeepRNN.MLP_RNN import MySkipRNN
+    from A2_DeepRNN.MLP_RNN import MySkipRNN
     in_dim = 2
     out_dim = 1
     h1_dim, p1 = 15, 6
@@ -24,7 +24,7 @@ elif algo=='skip rnn':
 
     model = MySkipRNN(in_dim, out_dim, h1_dim, h2_dim, p1, p2, depth_h1)
 elif algo=='res rnn': 
-    from _2_DeepRNN.MLP_RNN import ResRNN
+    from A2_DeepRNN.MLP_RNN import ResRNN
     in_dim = 2
     out_dim = 1
     h_dim = 20

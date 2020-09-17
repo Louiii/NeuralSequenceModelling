@@ -1,9 +1,9 @@
 from data.classification.Translation import *
-from _8_Attention.AttentionTypes import Encoder, Attention, RNN, SimpleDecoder, LuongDecoder, BahdanauDecoder
+from C2_Attention.AttentionTypes import Encoder, Attention, RNN, SimpleDecoder, LuongDecoder, BahdanauDecoder
 
 # TODO: Support bidirectional encoder
 
-PATH = '_8_Attention/models/'
+PATH = 'C2_Attention/models/'
 
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimiser,
                           decoder_optimiser, criterion, max_length=MAX_LENGTH):
@@ -83,7 +83,7 @@ def trainIters(encoder, decoder, encoder_optimiser, decoder_optimiser, n_iters,
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
 
-    showPlot(plot_losses)
+    showPlot(plot_losses, path)
 
 if __name__=="__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
