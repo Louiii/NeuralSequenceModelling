@@ -1,19 +1,30 @@
 # Landmark Algorithms in Neural Sequence Modelling
 
+# UNFINISHED, TODO:
 
-# TODO:
-
-AWESOME:
-- Multihead attention
+- Finish wavenet 
+- Sort multi-headed attention issue
 - Build transformer
 - Add protein dataset compatibility
-
-- SNAIL, SelfAttnGAN, PointerNetwork, Wavenet
+- Write D section
 
 > Organise classification training loop to best fit all types of data!
 > Organise whole file system to best fit with encoder-decoder architectures.
 > Use teacher forcing
 
+## OTHER STUFF:
+
+lstm - learning the initial state
+highway layers/recurrent dropout
+self-attention, key-value attention, masked attention
+ensembling, mixture of experts
+bayesian hyper param tuning: https://papers.nips.cc/paper/4522-practical-bayesian-optimization-of-machine-learning-algorithms.pdf
+model coverage- dealing with repitition in attention systems
+beam search: https://arxiv.org/pdf/1703.03906.pdf
+SNAIL
+SelfAttnGAN
+PointerNetwork
+Wavenet
 
 ```
 .

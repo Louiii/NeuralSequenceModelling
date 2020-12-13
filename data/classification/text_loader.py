@@ -1,28 +1,21 @@
 import torch
 
 class TextLoader:
-	def __init__(self, name='all_pytorch', rollout=25):
-		data = data = open('data/classification/'+name+'.txt', 'r').read()[:10000]
+	def __init__(self, name='all_pytorch', rollout=25, maxlen=10000):
+		data = open('data/classification/'+name+'.txt', 'r').read()[:maxlen]
 		chars = sorted(list(set(data)))
 		self.data_size, self.vocab_size = len(data), len(chars)
-		print("----------------------------------------")
-		print("Data has {} characters, {} unique".format(self.data_size, self.vocab_size))
-		print("----------------------------------------")
+		print(str(self.data_size)+' characters, '+str(self.vocab_size)+' unique')
 
-		# char to index and index to char maps
+		# char to index and index to char
 		self.char_to_ix = { ch:i for i,ch in enumerate(chars) }
 		self.ix_to_char = { i:ch for i,ch in enumerate(chars) }
 
-		# convert data from chars to indices
-		data = list(data)
-		for i, ch in enumerate(data):
-		    data[i] = self.char_to_ix[ch]
+		# convert data, chars to indices
+		data = [self.char_to_ix[ch] for ch in list(data)]
 
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-		# data tensor on device
-		data = torch.tensor(data).to(device)
-		self.data = torch.unsqueeze(data, dim=1)
+		self.data = torch.unsqueeze(torch.tensor(data).to(device), dim=1)
 
 		self.rollout = rollout
 

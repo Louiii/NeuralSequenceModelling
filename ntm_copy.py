@@ -32,16 +32,6 @@ criterion = nn.BCELoss()
 optimiser = optim.RMSprop(model.parameters(), momentum=0.9, alpha=0.95, lr=1e-4)
 
 
-
-get_ms = lambda : time.time() * 1000
-seed = int(get_ms() // 1000)
-np.random.seed(seed)
-torch.manual_seed(seed)
-random.seed(seed)
-
-
-print("Total number of parameters: %d"% model.n_params())
-
 losses, costs = [], []
 mean_loss = mean_cost = None
 pbar = tqdm(range(1, num_batches))
@@ -61,9 +51,8 @@ for batch_num in pbar:
     clip_grads(model)
     optimiser.step()
 
-    y_out_binarized = y_out.clone().data
-    y_out_binarized.apply_(lambda x: x > 0.5)
-    cost = torch.sum(torch.abs(y_out_binarized - Y.data))# The cost is the number of error bits per sequence
+    y_hat = y_out.clone().data.apply_(lambda x: x > 0.5)
+    cost = torch.sum(torch.abs(y_hat - Y.data))
     loss, cost = loss.item(), cost.item() / batch_size
 
     losses.append(loss)
@@ -74,40 +63,3 @@ for batch_num in pbar:
         mean_loss, mean_cost = sum(losses)/print_steps, sum(costs)/print_steps
         losses, costs = [], []
 
-
-# def evaluate(model, criterion, X, Y):
-#     """Evaluate a single batch (without training)."""
-#     inp_seq_len = X.size(0)
-#     outp_seq_len, batch_size, _ = Y.size()
-
-#     # New sequence
-#     model.init_sequence(batch_size)
-
-#     # Feed the sequence + delimiter
-#     states = []
-#     for i in range(inp_seq_len):
-#         o, state = model(X[i])
-#         states.append(state)
-
-#     # Read the output (no input given)
-#     y_out = torch.zeros(Y.size())
-#     for i in range(outp_seq_len):
-#         y_out[i], state = model()
-#         states.append(state)
-
-#     loss = criterion(y_out, Y)
-
-#     y_out_binarized = y_out.clone().data
-#     y_out_binarized.apply_(lambda x: 0 if x < 0.5 else 1)
-
-#     # The cost is the number of error bits per sequence
-#     cost = torch.sum(torch.abs(y_out_binarized - Y.data))
-
-#     result = {
-#         'loss': loss.data.item(),
-#         'cost': cost / batch_size,
-#         'y_out': y_out,
-#         'y_out_binarized': y_out_binarized,
-#         'states': states
-#     }
-#     return result
