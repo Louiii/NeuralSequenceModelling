@@ -1,16 +1,12 @@
 import torch
 import torch.nn as nn
 
-'''
-
+'''s
 In Seq2Seq, the simplest attention model, Q = hidden_state_decoder, 
 K = All the encoder hidden outputs , V = K in this case. In case of 
 self attention , Q = V = K
 
-
-Adding to it, Multihead attention is just a clever way to parameter-
-ise dot-product attention mechanism
-
+Multihead atn is a clever way to parameterise dot-product atn
 '''
 
 class Attention:# (nn.Module):
@@ -71,12 +67,6 @@ class MultiHead(nn.Module):
         # batch_size, seq_len, in_dim = Q.size()
         heads_out = torch.cat([h(Q, K, V) for h in self.heads], dim=-1)
         return self.out_proj( heads_out )
-
-
-
-
-
-
 
 
 class SelfAttention(nn.Module):
