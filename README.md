@@ -3,10 +3,8 @@
 # UNFINISHED, TODO:
 
 - Finish wavenet 
-- Sort multi-headed attention issue
-- Build transformer
 - Add protein dataset compatibility
-- Write D section
+- (Write D section?)
 
 > Organise classification training loop to best fit all types of data!
 > Organise whole file system to best fit with encoder-decoder architectures.
@@ -39,16 +37,19 @@ Wavenet
 │       └── AudioLoader.py
 │
 │
-├── _1_SimpleRNN
+├── A1_SimpleRNN
 │   ├── SimpleRNNs.py
 │   └── BidirectionalRNNs.py
-├── _2_DeepRNN ── VariableLayerRNN.py
-├── _3_GRU ── GRUs.py
-├── _4_LSTM ── LSTMs.py
-├── _5_NeuralTuringMachine ── NTM.py
-├── _6_Wavenet ── WaveNet.py
-├── _7_Attention ── Attention.py
-├── _8_Transformer ── Transformer.py
+├── A2_DeepRNN ── VariableLayerRNN.py
+├── A3_GRU ── GRUs.py
+├── A4_LSTM ── LSTMs.py
+├── B1_DilatedRNN ── DilatedRNNs.py
+├── B2_Wavenet ── WaveNet.py
+├── C1_NeuralTuringMachine ── NTM.py
+├── C2_Attention ── Attention.py
+├── C3_Transformer
+│       ├── MathsExample
+│       └── StoriesExample
 │
 │
 ├── ClassificationTrainingLoop.py
@@ -203,3 +204,5 @@ The algorithm:<br />
 
 
 # Transformer
+
+I have included two small projects. One project generates a random stream of maths questions in natural language e.g. 'divide -302 by 35' and its answer, this is included in 'MathsExample' in the folder. The other example is a dataset of many short stories and uses bytepair encoding whiich takes an extremly long time to run- this example needs work because my byte pair encoding diidn't generate good enough tokens in a reasonable time. I will come back to this example and try and figure out some faster approximate BPE encoder.
