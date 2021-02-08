@@ -4,3 +4,6 @@ C2_Attention/PyTorchMultiheadAttention.py
 C2_Attention/MultiHeadAttention.py
 C2_Attention/MHA.py
 ClassificationTrainingLoop.py
+D1_PointerNetwork/
+D2_SNAIL/
+D3_SelfAttentionGAN/
