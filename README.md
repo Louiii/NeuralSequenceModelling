@@ -2,7 +2,7 @@
 
 # UNFINISHED, TODO:
 
-- Finish wavenet 
+- Finish wavenet
 - Add protein dataset compatibility
 - (Write D section?)
 
@@ -199,9 +199,10 @@ The algorithm:<br />
        take one step for the decoder with s_t-1 as hidden and c_t as input<br />
        produce y_t<br />
 
-## Multi-headed Attention
+## Multi-head Attention
 
-
+Below is a diagram I produced in Mathcha (https://www.mathcha.io/) of applying a multi-head attention operation to a single sequence.
+![Multi-Head Attention](./MHA.png)
 
 # Transformer
 
